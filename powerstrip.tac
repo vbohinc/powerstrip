@@ -8,10 +8,15 @@ from powerstrip.powerstrip import ServerProtocolFactory
 application = service.Application("Powerstrip")
 
 DOCKER_HOST = os.environ.get('DOCKER_HOST')
+ENABLE_UNIX_SOCKET = os.environ.get('POWERSTRIP_UNIX_SOCKET', "")
+
 if DOCKER_HOST is None:
     # Default to assuming we've got a Docker socket bind-mounted into a
     # container we're running in.
-    DOCKER_HOST = "unix:///host-var-run/docker.real.sock"
+    if "YES" in ENABLE_UNIX_SOCKET:
+      DOCKER_HOST = "unix:///host-var-run/docker.real.sock"
+    else:
+      DOCKER_HOST = "unix:///host-var-run/docker.sock"
 if "://" not in DOCKER_HOST:
     DOCKER_HOST = "tcp://" + DOCKER_HOST
 if DOCKER_HOST.startswith("tcp://"):
@@ -27,5 +32,6 @@ elif DOCKER_HOST.startswith("unix://"):
 # https://github.com/ClusterHQ/powerstrip/issues/56 is resolved.
 # TODO: maybe allow to specify a numberic Docker group (gid) as environment
 # variable, and also (optionally) the name of the socket file it creates...
-dockerServer = internet.UNIXServer("/host-var-run/docker.sock", dockerAPI, mode=0660)
-dockerServer.setServiceParent(application)
+if "YES" in ENABLE_UNIX_SOCKET:
+  dockerServer = internet.UNIXServer("/host-var-run/docker.sock", dockerAPI, mode=0660)
+  dockerServer.setServiceParent(application)
