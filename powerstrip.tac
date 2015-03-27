@@ -28,10 +28,10 @@ elif DOCKER_HOST.startswith("unix://"):
     dockerAPI = ServerProtocolFactory(dockerSocket=socketPath)
 #logged = TrafficLoggingFactory(dockerAPI, "api-")
 
-# Refuse to listen on a TCP port, until
-# https://github.com/ClusterHQ/powerstrip/issues/56 is resolved.
-# TODO: maybe allow to specify a numberic Docker group (gid) as environment
-# variable, and also (optionally) the name of the socket file it creates...
 if "YES" in ENABLE_UNIX_SOCKET:
   dockerServer = internet.UNIXServer("/host-var-run/docker.sock", dockerAPI, mode=0660)
   dockerServer.setServiceParent(application)
+else:
+  dockerServer = internet.TCPServer(2375, dockerAPI, interface='0.0.0.0')
+  dockerServer.setServiceParent(application)
+  print r'export DOCKER_HOST=tcp://localhost:2375'
